@@ -15,12 +15,12 @@ transform = transforms.Compose(
 
 batch_size = 4
 
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+trainset = torchvision.datasets.CIFAR10(root='../dataset/cifar10_pytorch/data', train=True,
                                         download=False, transform=transform)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                           shuffle=True, num_workers=0)
 
-testset = torchvision.datasets.CIFAR10(root='./data', train=False,
+testset = torchvision.datasets.CIFAR10(root='../dataset/cifar10_pytorch/data', train=False,
                                        download=False, transform=transform)
 testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                          shuffle=False, num_workers=0)
@@ -47,7 +47,7 @@ def train(dataloader, model, loss_fn, optimizer, epoch):
         loss.backward()
         optimizer.step()
 
-        if batch % 10000 == 0:
+        if batch * len(X) % 10000 == 0:
             print("Epoch: {:>4d} Train Loss:{:>.6f} [{:>6d} / {:>6d}]".format(epoch, loss.item(), batch * len(X), size))
 
 
@@ -64,10 +64,10 @@ def test(dataloader, model, loss_fn, epoch):
             _, pred_id = torch.max(pred.data, 1)
             correct += (pred.argmax(1) == y).type(torch.int).sum().item()
 
-    print("Epoch: {:>4d}  Test Accuracy :{:>6d} / {:>6d}".format(epoch, correct, size))
+    print("Epoch: {:>4d}  Test  Acc:{:>.6f} [{:>6d} / {:>6d}]".format(epoch, float(correct) / size, correct, size))
 
 model = LeNet().to(device)
-# model.load_state_dict(torch.load("model.pth"))
+model.load_state_dict(torch.load("model.pth"))
 loss_fn = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=0.001)
 for epoch in range(10):
