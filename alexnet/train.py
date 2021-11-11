@@ -1,13 +1,12 @@
 import os
+import sys
 import json
 from tqdm import tqdm
 import torch
 from torch import nn
 from torch import optim
-import torchvision
 from torch.utils.data import DataLoader
-from torchvision import transforms, datasets, utils
-import numpy as np
+from torchvision import transforms, datasets
 from model import AlexNet
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -54,42 +53,42 @@ def data_loader_prepare(batch_size):
 
 
 def train(data_loader, model, loss_fn, optimizer, epoch, EPOCH):
-    train_loss = 0.
-    # train_bar = tqdm(data_loader, ncols=80)
     model.train()
-    for _, (x, y) in enumerate(data_loader):
-        x, y = x.to(device), y.to(device)
-        pred = model(x)
-        loss = loss_fn(pred, y)
+    train_loss = 0.
+    desc = "[EPOCH {:>3d} / {:>3d}] TRAIN".format(epoch+1, EPOCH)
+    with tqdm(data_loader, desc=desc, ncols=80, file=sys.stdout) as train_bar:
+        for (x, y) in train_bar:
+            x, y = x.to(device), y.to(device)
+            pred = model(x)
+            loss = loss_fn(pred, y)
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-        train_loss += loss.item()
-        # train_bar.desc = "[EPOCH {:>3d} / {:>3d}] TRAIN LOSS : {:.6f} ".format(epoch+1, EPOCH, train_loss)
+            train_loss += loss.item()
 
     print("[EPOCH {:>3d} / {:>3d}] TRAIN LOSS : {:.6f} ".format(epoch + 1, EPOCH, train_loss))
 
 
 def valid(data_loader, model, loss_fn, epoch, EPOCH):
-    valid_loss = 0.
-    # valid_bar = tqdm(data_loader, ncols=80)
-    valid_num = len(data_loader.dataset)
-    correct_num = 0
     model.eval()
+    valid_loss = 0.
+    valid_num = len(data_loader.dataset)
+    correct_num = 0.
+    desc = "[EPOCH {:>3d} / {:>3d}] VALID".format(epoch + 1, EPOCH)
     with torch.no_grad():
-        for _, (x, y) in enumerate(data_loader):
-            x, y = x.to(device), y.to(device)
-            pred = model(x)
-            loss = loss_fn(pred, y)
+        with tqdm(data_loader, desc=desc, ncols=80, file=sys.stdout) as valid_bar:
+            for (x, y) in valid_bar:
+                x, y = x.to(device), y.to(device)
+                pred = model(x)
+                loss = loss_fn(pred, y)
 
-            valid_loss += loss.item()
-            # valid_bar.desc = "[EPOCH {:>6d} / {:>6d}] VALID LOSS : {:.6f} ".format(epoch + 1, EPOCH, valid_loss)
-            correct_num += (pred.argmax(1) == y).type(torch.int).sum().item()
+                valid_loss += loss.item()
+                correct_num += (pred.argmax(1) == y).type(torch.float).sum().item()
 
         print("[EPOCH {:>3d} / {:>3d}] VALID LOSS : {:.6f} ".format(epoch + 1, EPOCH, valid_loss))
-        print("[EPOCH {:>3d} / {:>3d}] VALID ACRR : {:.6f} ".format(epoch + 1, EPOCH, float(correct_num) / valid_num))
+        print("[EPOCH {:>3d} / {:>3d}] VALID ACRR : {:.6f} ".format(epoch + 1, EPOCH, correct_num / valid_num))
 
 if __name__ == "__main__":
     batch_size = 32
