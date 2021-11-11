@@ -6,6 +6,7 @@ import torch
 from torch import nn
 from torch import optim
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms, datasets
 from model import AlexNet
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -52,7 +53,7 @@ def data_loader_prepare(batch_size):
     return train_loader, valid_loader
 
 
-def train(data_loader, model, loss_fn, optimizer, epoch, EPOCH):
+def train(data_loader, model, loss_fn, optimizer, epoch, EPOCH, writer):
     model.train()
     train_loss = 0.
     desc = "[EPOCH {:>3d} / {:>3d}] TRAIN".format(epoch+1, EPOCH)
@@ -69,9 +70,10 @@ def train(data_loader, model, loss_fn, optimizer, epoch, EPOCH):
             train_loss += loss.item()
 
     print("[EPOCH {:>3d} / {:>3d}] TRAIN LOSS : {:.6f} ".format(epoch + 1, EPOCH, train_loss))
+    writer.add_scalar('Train Loss', train_loss, epoch + 1)
 
 
-def valid(data_loader, model, loss_fn, epoch, EPOCH):
+def valid(data_loader, model, loss_fn, epoch, EPOCH, writer):
     model.eval()
     valid_loss = 0.
     valid_num = len(data_loader.dataset)
@@ -88,9 +90,13 @@ def valid(data_loader, model, loss_fn, epoch, EPOCH):
                 correct_num += (pred.argmax(1) == y).type(torch.float).sum().item()
 
         print("[EPOCH {:>3d} / {:>3d}] VALID LOSS : {:.6f} ".format(epoch + 1, EPOCH, valid_loss))
-        print("[EPOCH {:>3d} / {:>3d}] VALID ACRR : {:.6f} ".format(epoch + 1, EPOCH, correct_num / valid_num))
+        print("[EPOCH {:>3d} / {:>3d}] VALID ACCU : {:.6f} ".format(epoch + 1, EPOCH, correct_num / valid_num))
+        writer.add_scalar('Valid Loss', valid_loss, epoch + 1)
+        writer.add_scalar('Valid Accu', correct_num / valid_num, epoch + 1)
+
 
 if __name__ == "__main__":
+    writer = SummaryWriter('log')
     batch_size = 32
     lr = 0.0002
     train_loader, valid_loader = data_loader_prepare(batch_size=batch_size)
@@ -101,9 +107,10 @@ if __name__ == "__main__":
 
     EPOCH = 10
     for epoch in range(EPOCH):
-        train(train_loader, model, loss_fn, optimizer, epoch, EPOCH)
-        valid(valid_loader, model, loss_fn, epoch, EPOCH)
+        train(train_loader, model, loss_fn, optimizer, epoch, EPOCH, writer)
+        valid(valid_loader, model, loss_fn, epoch, EPOCH, writer)
 
     print("Done!")
     torch.save(model.state_dict(), "model.pth")
+    writer.close()
 
