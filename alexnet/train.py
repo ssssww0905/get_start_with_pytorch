@@ -46,7 +46,7 @@ def data_loader_prepare(batch_size):
                               batch_size=batch_size,
                               shuffle=True,
                               num_workers=0)
-    valid_loader = DataLoader(train_dataset,
+    valid_loader = DataLoader(valid_dataset,
                               batch_size=batch_size,
                               shuffle=False,
                               num_workers=0)
